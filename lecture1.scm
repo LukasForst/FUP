@@ -34,3 +34,5 @@
 (cons 1 '()) ;returns (1)
 
 (list 1 2 3) ;creates a list, returns: (1 2 3)
+
+
