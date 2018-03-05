@@ -7,7 +7,7 @@
 (w 0 0 0 w w)
 (w w w w w w)))
 
-(define (stat) (list (mz) `(1 4) `north))
+(define (stat) (list (mz) `(1 1) `south))
 
 ;state - (<maze> (<coordinate-x> <coordinate-y>) <orientation>)
 (define (maze-idx) 0)
@@ -15,6 +15,7 @@
 (define (orient-idx) 2)
 (define (value-on-nth-element li nth-ele) (if (= nth-ele 0) (car li) (value-on-nth-element (cdr li) (- nth-ele 1))))
 (define (get-maze state) (value-on-nth-element state (maze-idx)))
+(define (get-curr-position state) (value-on-nth-element state (coord-idx)))
 (define (get-curr-x state) (value-on-nth-element (value-on-nth-element state (coord-idx)) 0))
 (define (get-curr-y state) (value-on-nth-element (value-on-nth-element state (coord-idx)) 1))
 (define (get-orient state) (value-on-nth-element state (orient-idx)))
@@ -62,10 +63,44 @@
       ((north? state) (value-xy (get-maze state) (- (get-curr-x state) 1) (get-curr-y state)))
       ((south? state) (value-xy (get-maze state) (+ (get-curr-x state) 1) (get-curr-y state))))))
   
-(define (wall? state)
-  (if (eqv? (get-front state) `w) #t #f))
+(define (wall? state) (if (eqv? (get-front state) `w) #t #f))
+(define (mark? state) (let ((val (get-curr-val state))) (if (number? val) (if (> val 0) #t #f) #f)))
+
+(define (make-step state)
+  (if (wall? state) state
+       (cond
+          ((west? state) (set-x state (coord-idx) (set-x (get-curr-position state) 1 (- (get-curr-y state) 1))))
+          ((east? state) (set-x state (coord-idx) (set-x (get-curr-position state) 1 (+ (get-curr-y state) 1))))
+          ((north? state) (set-x state (coord-idx) (set-x (get-curr-position state) 0 (- (get-curr-x state) 1))))
+          ((south? state) (set-x state (coord-idx)(set-x (get-curr-position state) 0 (+ (get-curr-x state) 1)))))))
+
+(define (turn-left state)
+   (cond
+      ((west? state) (set-x state (orient-idx) `south))
+      ((east? state) (set-x state (orient-idx) `north))
+      ((north? state) (set-x state (orient-idx) `west))
+      ((south? state) (set-x state (orient-idx) `east))))
+
+(define (turn-right state) (turn-left(turn-left(turn-left state))))
 
 
 
 (define (simulate state expr program limit)
-  (get-maze state)) ;state - (<maze> (<coordinate-x> <coordinate-y>) <orientation>)
+  (simulate-next expr `() state program limit))
+
+
+(define (simulate-next next-steps previous-steps state procedures limit)
+  (if (null? next-steps) (list previous-steps state)
+      (let ((next (car next-steps)))
+        (cond
+          ((eqv? next `step) (simulate-next (cdr next-steps) (merge previous-steps next) (make-step state) procedures limit))
+          ((eqv? next `get-mark) (simulate-next (cdr next-steps) (merge previous-steps next) (get-mark state) procedures limit))
+          ((eqv? next `put-mark) (simulate-next (cdr next-steps) (merge previous-steps next) (put-mark state) procedures limit) )
+          ((eqv? next `turn-left) (simulate-next (cdr next-steps) (merge previous-steps next) (turn-left state) procedures limit))
+          (#t (display "err"));evaluate procedure
+        ))))
+
+(stat)
+(simulate (stat) `(step put-mark step put-mark put-mark put-mark turn-left turn-left turn-left turn-left get-mark) `() 1)
+
+
