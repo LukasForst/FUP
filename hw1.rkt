@@ -100,7 +100,40 @@
           (#t (display "err"));evaluate procedure
         ))))
 
-(stat)
-(simulate (stat) `(step put-mark step put-mark put-mark put-mark turn-left turn-left turn-left turn-left get-mark) `() 1)
+(define (procedure-call curr-call next-steps previous-steps state procedures limit)
+  (cond
+    ((= 0 limit) (merge previous-steps state))
+    ((eqv? curr-call (cadar procedures)) )
+    ))
+    
+  
+
+;(stat)
+;(simulate (stat) `(step put-mark step put-mark put-mark put-mark turn-left turn-left turn-left turn-left get-mark) `() 1)
 
 
+(define right-hand-rule-prg
+  '(
+    (procedure start
+      ( turn-right
+        (if wall?
+           ( turn-left
+             (if wall?
+                 (turn-left
+                     (if wall?
+                        turn-left
+                        step
+                     )
+                 )
+                 step
+              )
+           )
+           step  
+        )
+        put-mark
+        start
+      )
+    )   
+    (procedure turn-right (turn-left turn-left turn-left))
+  )
+)
