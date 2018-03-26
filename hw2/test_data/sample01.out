@@ -1,0 +1,4 @@
+(
+((8 5 5 2) ((procedure start (step step step put-mark))))
+((18 7 6 20) ((procedure start (put-mark (if wall? turn-left step) start))))
+)

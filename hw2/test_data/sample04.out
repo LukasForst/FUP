@@ -1,0 +1,2 @@
+> (((0 1 11 19) ((procedure start (turn-north go)) (procedure go (if wall? () (step go))) (procedure turn-north (if north? () (turn-left turn-north))))) ((0 3 14 26) ((procedure start (go-north go)) (procedure go (if wall? (turn-left go) (step go-north go))) (procedure go-north (if north? () (turn-left go-north))))))
+> 

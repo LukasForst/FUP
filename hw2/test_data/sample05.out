@@ -1,0 +1,2 @@
+> (((56 0 2 1) ((procedure start put-mark))) ((56 1 5 2) ((procedure start (if wall? put-mark (step start))))))
+> 

@@ -1,0 +1,61 @@
+
+(define s0
+'(
+(w w w w w w w w)
+(w 0 0 0 0 0 0 w)
+(w 0 0 0 0 0 0 w)
+(w 0 w w 0 w 0 w)
+(w 0 w 0 0 w 0 w)
+(w 0 w 0 0 w 0 w)
+(w 0 w w w w 0 w)
+(w 0 0 0 0 0 0 w)
+(w 0 0 0 0 0 0 w)
+(w w w w w w w w)
+)
+)
+
+(define t0
+'(
+(w w w w w w w w)
+(w 2 2 1 1 2 2 w)
+(w 2 2 2 2 2 2 w)
+(w 1 w w 1 w 1 w)
+(w 1 w 1 1 w 1 w)
+(w 1 w 1 1 w 1 w)
+(w 1 w w w w 1 w)
+(w 2 2 2 2 2 2 w)
+(w 2 2 1 1 2 2 w)
+(w w w w w w w w)
+)
+)
+
+
+
+(define p0
+  '(
+    (procedure start
+      put-mark
+    )
+   )
+)
+
+
+(define p1
+  '(
+    (procedure start
+      (if wall? put-mark (step start))
+    )
+   )
+)
+
+(define p2
+  '(
+    (procedure start
+      (if wall? put-mark (step start turn-left turn-left step turn-left turn-left))
+    )
+   )
+)
+
+
+(newline)
+(evaluate `(,p0 ,p1 ,p2) `(((,s0 (2 7) south) (,t0 (2 7) south))) `(107 500 99 6) 500)

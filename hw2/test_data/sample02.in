@@ -1,0 +1,98 @@
+(define s0
+'(
+(w w w)
+(w 0 w)
+(w w w)
+)
+)
+
+(define t0
+'(
+(w w w)
+(w 1 w)
+(w w w)
+)
+)
+
+(define s1
+'(
+(w w w)
+(w 0 w)
+(w 0 w)
+(w w w)
+)
+)
+
+(define t1
+'(
+(w w w)
+(w 0 w)
+(w 1 w)
+(w w w)
+)
+)
+
+(define s2
+'(
+(w w w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w w w)
+)
+)
+
+(define t2
+'(
+(w w w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 1 w)
+(w w w)
+)
+)
+
+
+
+(define p1
+  '(
+    (procedure start
+      put-mark
+    )
+   )
+)
+
+(define p2
+  '(
+    (procedure start
+      (if wall? put-mark step)
+    )
+   )
+)
+
+(define p3
+  '(
+    (procedure start
+      (if wall? put-mark (step start))
+    )
+   )
+)
+
+(define p4
+  '(
+    (procedure start
+      (if wall? put-mark (step start turn-left turn-left step turn-left turn-left))
+    )
+   )
+)
+
+(newline)
+(evaluate `(,p1 ,p2 ,p3 ,p4) `(((,s0 (1 1) south) (,t0 (1 1) south)) ((,s1 (1 1) south) (,t1 (1 1) south)) ((,s2 (1 1) south) (,t2 (1 1) south))) `(50 50 50 50) 20)

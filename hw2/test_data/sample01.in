@@ -1,0 +1,55 @@
+(define prgs
+'(
+   ( 
+      (procedure start
+         (turn-right (if wall? (turn-left 
+             (if wall? (turn-left (if wall? turn-left step)) step)) step)
+                 put-mark start )
+      )   
+      (procedure turn-right (turn-left turn-left turn-left))
+  )
+  (
+      (procedure start  (put-mark (if wall? turn-left step) start))
+  )
+  (
+      (procedure start (step step step put-mark))
+  )
+)
+)
+
+(define pairs
+'(
+  (
+   (((w w w w w w) 
+     (w 0 w 0 w w) 
+     (w 1 w 0 0 w) 
+     (w 1 0 0 w w) 
+     (w w w w w w)) 
+     (1 3) south)
+
+   (((w w w w w w) 
+     (w 0 w 0 w w) 
+     (w 0 w 0 0 w) 
+     (w 0 0 0 w w) 
+     (w w w w w w)) 
+     (1 1) north)
+   )
+   (
+   (((w w w w w w) 
+     (w 0 w 0 w w) 
+     (w 0 w 2 0 w) 
+     (w 1 3 0 w w) 
+     (w w w w w w)) 
+     (3 3) north)
+
+   (((w w w w w w) 
+     (w 0 w 0 w w) 
+     (w 0 w 0 0 w) 
+     (w 0 0 0 w w) 
+     (w w w w w w)) 
+     (1 1) north)
+  ))
+ )
+
+(newline)
+(evaluate prgs pairs '(20 20 20 20) 5)

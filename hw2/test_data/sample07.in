@@ -1,0 +1,44 @@
+(define s
+'(
+(w w w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 1 w)
+(w 0 w)
+(w 0 w)
+(w w w)
+)
+)
+
+(define t
+'(
+(w w w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 0 w)
+(w 1 w)
+(w 0 w)
+(w 0 w)
+(w w w)
+)
+)
+
+
+(define p
+  '(
+    (procedure start
+      (if wall? put-mark (step start))
+    )
+   )
+)
+
+
+(newline)
+(evaluate `( ,p  )
+          `(
+            ((,s (1 1) south) (,t (1 7) south))
+            )
+          `(4 5 999 999) 20)

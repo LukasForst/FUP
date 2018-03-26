@@ -1,0 +1,2 @@
+> (((0 0 10 45) ((procedure start (if wall? put-mark (step start turn-left turn-left step turn-left turn-left))))) ((0 7 5 10) ((procedure start (if wall? put-mark (step start))))) ((2 2 4 3) ((procedure start (if wall? put-mark step)))) ((4 0 2 3) ((procedure start put-mark))))
+> 
