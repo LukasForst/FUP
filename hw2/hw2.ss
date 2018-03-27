@@ -1,5 +1,5 @@
-#lang racket
-(require racket/trace)
+;#lang racket
+;(require racket/trace)
 
 
 ;state - (<maze> (<coordinate-x> <coordinate-y>) <orientation>)
@@ -18,6 +18,13 @@
 (define (east? state) (eqv? (get-orient state) `east))
 (define (to-list a) (if (list? a) a (list a)))
 (define (merge li1 li2) (append (to-list li1) (to-list li2)))
+
+(define (flatten x)
+(cond ((null? x) '())
+        ((pair? x) (append (flatten (car x)) (flatten (cdr x))))
+        (else (list x))
+  )
+)
 
 (define (value-xy 2d-arr x y)
   (let ((xs (value-on-nth-element 2d-arr y)))
@@ -70,29 +77,29 @@
       ((south? state) (set-x state (orient-idx) `east))))
 
 
-(define (simulate state expr program limit)
-  (simulate-next expr `() state program limit))
+(define (simulate state expr program limit threshold)
+  (simulate-next expr `() state program limit 0 threshold))
 
 (define (get-procedure-steps program procedure-name)
   (if(eqv? procedure-name (cadr (car program))) (caddr (car program)) (get-procedure-steps (cdr program) procedure-name)))
 
 
-(define (simulate-next next-steps previous-steps state program limit)
-  (if (null? next-steps) (list previous-steps state)
+(define (simulate-next next-steps previous-steps state program limit current-steps threshold)
+  (if (or (null? next-steps) (> current-steps threshold)) (list previous-steps state)
       (let ((next (car (to-list next-steps))))
         (cond
-          ((eqv? next `step) (if (wall? state) (list previous-steps state) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (make-step state) program limit)))
-          ((eqv? next `get-mark) (if (mark? state) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (get-mark state) program limit) (list previous-steps state)))
-          ((eqv? next `put-mark) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (put-mark state) program limit) )
-          ((eqv? next `turn-left) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (turn-left state) program limit))
-          (#t (procedure-call (merge (get-procedure-steps program next) `end) (cdr (to-list next-steps))  previous-steps state program (- limit 1)))
+          ((eqv? next `step) (if (wall? state) (list previous-steps state) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (make-step state) program limit (+ 1 current-steps) threshold)))
+          ((eqv? next `get-mark) (if (mark? state) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (get-mark state) program limit  (+ 1 current-steps) threshold) (list previous-steps state)))
+          ((eqv? next `put-mark) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (put-mark state) program limit (+ 1 current-steps) threshold))
+          ((eqv? next `turn-left) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (turn-left state) program limit (+ 1 current-steps) threshold))
+          (#t (procedure-call (merge (get-procedure-steps program next) `end) (cdr (to-list next-steps))  previous-steps state program (- limit 1) (+ 1 current-steps) threshold))
           (#t (display "err"));evaluate procedure
         ))))
 
-(define (procedure-call procedure-steps next-steps previous-steps state program limit)
+(define (procedure-call procedure-steps next-steps previous-steps state program limit current-steps threshold)
   (cond
-    ((> 0 limit) (list previous-steps state))
-    ((null? procedure-steps) (simulate-next next-steps previous-steps state program limit))
+    ((or (> 0 limit) (> current-steps threshold)) (list previous-steps state))
+    ((null? procedure-steps) (simulate-next next-steps previous-steps state program limit current-steps threshold))
     (#t (let ((next (car procedure-steps)))
         (cond
           ((list? next)
@@ -101,16 +108,16 @@
              (cond
                ((eqv? condi `north?)
                 (if (north? state)
-                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit);true
-                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit)));else
+                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else
                ((eqv? condi `mark?)
                 (if (mark? state)
-                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit);true
-                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
                ((eqv? condi `wall?)
                 (if (wall? state)
-                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit);true
-                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
                (#t (display "error")); return error
              )) (display next))) ;error?
 
@@ -119,25 +126,25 @@
              (cond
                ((eqv? condi `north?)
                 (if (north? state)
-                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit);true
-                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit)));else
+                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else
                ((eqv? condi `mark?)
                 (if (mark? state)
-                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit);true
-                    (procedure-call (merge (cadr (cdr (cdr procedure-steps)))(cddddr procedure-steps)) next-steps previous-steps state program limit)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr procedure-steps)))(cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
                ((eqv? condi `wall?)
                 (if (wall? state)
-                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit);true
-                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
                (#t (display "error")); return error
              ))) ;error?
           
-          ((eqv? next `end) (procedure-call (cdr procedure-steps) next-steps previous-steps state program (+ limit 1)))
-          ((eqv? next `step)(if (wall? state) (list previous-steps state) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (make-step state) program limit)))
-          ((eqv? next `get-mark) (if (mark? state) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (get-mark state) program limit) (list previous-steps state)))
-          ((eqv? next `put-mark) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (put-mark state) program limit))
-          ((eqv? next `turn-left) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (turn-left state) program limit))
-          (#t (procedure-call (merge (merge (get-procedure-steps program next) `end) (cdr procedure-steps)) next-steps previous-steps state program (- limit 1)))
+          ((eqv? next `end) (procedure-call (cdr procedure-steps) next-steps previous-steps state program (+ limit 1) current-steps threshold))
+          ((eqv? next `step)(if (wall? state) (list previous-steps state) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (make-step state) program limit (+ 1 current-steps) threshold)))
+          ((eqv? next `get-mark) (if (mark? state) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (get-mark state) program limit (+ 1 current-steps) threshold) (list previous-steps state)))
+          ((eqv? next `put-mark) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (put-mark state) program limit (+ 1 current-steps) threshold))
+          ((eqv? next `turn-left) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (turn-left state) program limit (+ 1 current-steps) threshold))
+          (#t (procedure-call (merge (merge (get-procedure-steps program next) `end) (cdr procedure-steps)) next-steps previous-steps state program (- limit 1) (+ 1 current-steps) threshold))
         )))
     ))
 
@@ -149,101 +156,115 @@
 |#
 
 (define (evaluate prgs pairs threshold stack-size) (sort-results (evaluate-programs `() prgs pairs threshold stack-size)))
-;(trace evaluate)
 
 ;returns (<value> <program>) where values - `(Manhattan distance, Robot configuration distance, The length of the program, Number of steps)
 (define (evaluate-programs result-data programs pairs threshold stack-size)
   (if (null? programs) result-data
-      (let ((curr-program (car programs))
-            (curr-threshold (car threshold)))
-         (evaluate-programs (append result-data (list (list (evaluate-pairs `(0 0 0 0) curr-program pairs curr-threshold stack-size) curr-program))) (cdr programs) pairs (cdr threshold) stack-size)
-      )
-  )
-)
-;(trace evaluate-programs)
-
-;current state is current values
-;returns <values> where values - `(Manhattan distance, Robot configuration distance, The length of the program, Number of steps) for one particular program
-(define (evaluate-pairs current-state program pairs threshold stack-size)
-  (if (null? pairs) current-state
-      (let ((current-pair (car pairs)))
-        (let ((current-todo (cadr current-pair))
-              (current-expected (car current-pair)))
-          (let ((computed (simulate current-todo `start program stack-size))) ;;state expression program limit
-            (evaluate-pairs (merge-states (evaluate-computed computed current-expected threshold) current-state) program (cdr pairs) threshold stack-size)
+      (let ((curr-program (car programs)))
+        (let ((evaluated-program (evaluate-pairs `(0 0 (unquote (prog-lenght curr-program)) 0) curr-program pairs (value-on-nth-element threshold 3) stack-size)))
+          (if (should-store? threshold evaluated-program)
+              (evaluate-programs (append result-data (list (list evaluated-program curr-program))) (cdr programs) pairs threshold stack-size)
+              (evaluate-programs result-data (cdr programs) pairs threshold stack-size)                
           )
         )
       )
   )
 )
 
-;evaluates computed data `(Manhattan distance, Robot configuration distance, The length of the program, Number of steps)
-;todo
-(define (evaluate-computed computed-state expected-state threshold) `(1 1 1 1))
+(define (should-store? threshold evaluated-program)
+  (and
+   (>= (value-on-nth-element threshold 0) (value-on-nth-element evaluated-program 0))
+   (>= (value-on-nth-element threshold 1) (value-on-nth-element evaluated-program 1))
+   (>= (value-on-nth-element threshold 2) (value-on-nth-element evaluated-program 2))
+   (>= (value-on-nth-element threshold 3) (value-on-nth-element evaluated-program 3))
+   )
+)
 
+(define (prog-lenght program)
+  (define (cond-count word count)
+    (cond
+      ((eqv? `if word) count)
+      ((eqv? `procedure word) count)
+      (#t (+ count 1))
+    )
+  )
+  
+  (define (prog-counter program count)
+    (cond
+      ((null? program) count)
+      (#t (prog-counter (cdr program) (cond-count (car program) count)))
+    )
+  )
+  (prog-counter (flatten program) 0)
+)
+
+;current state is current values
+;returns <values> where values - `(Manhattan distance, Robot configuration distance, The length of the program, Number of steps) for one particular program
+(define (evaluate-pairs current-state program pairs threshold stack-size)
+  (if (null? pairs) current-state
+      (let ((current-pair (car pairs)))
+        (let ((current-todo (car current-pair))
+              (current-expected (cadr current-pair)))
+          (let ((computed (simulate current-todo `start program stack-size (car (to-list threshold))))) ;;state expression program limit
+            (evaluate-pairs (merge-states (evaluate-computed computed current-expected program threshold) current-state) program (cdr pairs) threshold stack-size)
+          )
+        )
+      )
+  )
+)
 (define (merge-states state1 state2) (map + state1 state2))
 
-;todo sort results from evaluate-one-pair
-(define (sort-results data) data)
-
-
-;(trace evaluate-computed)
-;(trace simulate)
-
-
-
-
-(define prgs
-'(
-   ( 
-      (procedure start
-         (turn-right (if wall? (turn-left 
-             (if wall? (turn-left (if wall? turn-left step)) step)) step)
-                 put-mark start )
-      )   
-      (procedure turn-right (turn-left turn-left turn-left))
-  )
-  (
-      (procedure start  (put-mark (if wall? turn-left step) start))
-  )
-  (
-      (procedure start (step step step put-mark))
-  )
-)
+;evaluates computed data `(Manhattan distance, Robot configuration distance, The length of the program, Number of steps)
+(define (evaluate-computed computed-state expected-state program threshold)
+  (list (get-manhattan (caadr computed-state) (car expected-state)) (get-robot-config (cdadr computed-state) (cdr expected-state)) 0 (steps-no (car computed-state)))
 )
 
-(define pairs
-'(
-  (
-   (((w w w w w w) 
-     (w 0 w 0 w w) 
-     (w 1 w 0 0 w) 
-     (w 1 0 0 w w) 
-     (w w w w w w)) 
-     (1 3) south)
+(define (get-manhattan computed-state expected-state)
+  (cond
+    ((null? expected-state) 0)
+    ((list? (car expected-state)) (+ (get-manhattan (car expected-state) (car computed-state)) (get-manhattan (cdr expected-state) (cdr computed-state))))
+    ((number? (car expected-state)) (+ (abs (- (car expected-state) (car computed-state))) (get-manhattan (cdr expected-state) (cdr computed-state))))
+    (#t (get-manhattan (cdr expected-state) (cdr computed-state)))
+  )
+)
 
-   (((w w w w w w) 
-     (w 0 w 0 w w) 
-     (w 0 w 0 0 w) 
-     (w 0 0 0 w w) 
-     (w w w w w w)) 
-     (1 1) north)
+(define (steps-no computed-state)
+  (define (len state count)
+    (if (null? state) count (len (cdr state) (+ count 1)))
    )
-   (
-   (((w w w w w w) 
-     (w 0 w 0 w w) 
-     (w 0 w 2 0 w) 
-     (w 1 3 0 w w) 
-     (w w w w w w)) 
-     (3 3) north)
+  (len computed-state 0)
+)
 
-   (((w w w w w w) 
-     (w 0 w 0 w w) 
-     (w 0 w 0 0 w) 
-     (w 0 0 0 w w) 
-     (w w w w w w)) 
-     (1 1) north)
-  ))
- )
+(define (get-robot-config computed-state expected-state)
+  (define (condi-count counter comp exp)
+    (if (number? comp) (+ (abs (- comp exp)) counter)
+        (if (eqv? comp exp) counter (+ counter 1))
+    )
+  )
 
-(evaluate prgs pairs '(20 20 20 20) 5)
+  (define (executor counter comp exp)
+    (if (null? comp) counter (executor (condi-count counter (car comp) (car exp)) (cdr comp) (cdr exp)))
+  )
+
+  (executor 0 (flatten computed-state) (flatten expected-state))
+)
+
+;todo sort results from evaluate-one-pair
+(define (sort-results data) (bubb data))
+
+(define (bubble-up L lambda)
+    (if (null? (cdr L))   
+        L    
+        (if (lambda L)   
+            (cons (car L) (bubble-up (cdr L) lambda))   
+            (cons (cadr L) (bubble-up (cons (car L) (cddr L)) lambda)))))
+
+(define (bubble-sort-aux length L lambda-condition)    
+    (cond ((= length 1) (bubble-up L lambda-condition))   
+          (else (bubble-sort-aux (- length 1) (bubble-up L lambda-condition) lambda-condition))))
+
+(define (bubbleH L lambda-condition) 
+    (bubble-sort-aux (length L) L lambda-condition))
+
+(define (bubb L)
+  (bubbleH (bubbleH (bubbleH (bubbleH L (lambda (L) (<= (cadddr (caar L)) (cadddr (caadr L))))) (lambda (L) (<= (caddr (caar L)) (caddr (caadr L))))) (lambda (L) (<= (cadr (caar L)) (cadr (caadr L))))) (lambda (L) (<= (caaar L) (caaadr L)))))
