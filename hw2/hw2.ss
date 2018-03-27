@@ -85,20 +85,24 @@
 
 
 (define (simulate-next next-steps previous-steps state program limit current-steps threshold)
-  (if (or (null? next-steps) (> current-steps threshold)) (list previous-steps state)
+  (cond
+    ((null? next-steps) (list previous-steps state))
+    ((> current-steps threshold) (list (merge previous-steps `step) state))
+    (#t
       (let ((next (car (to-list next-steps))))
         (cond
           ((eqv? next `step) (if (wall? state) (list previous-steps state) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (make-step state) program limit (+ 1 current-steps) threshold)))
           ((eqv? next `get-mark) (if (mark? state) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (get-mark state) program limit  (+ 1 current-steps) threshold) (list previous-steps state)))
           ((eqv? next `put-mark) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (put-mark state) program limit (+ 1 current-steps) threshold))
           ((eqv? next `turn-left) (simulate-next (cdr (to-list next-steps)) (merge previous-steps next) (turn-left state) program limit (+ 1 current-steps) threshold))
-          (#t (procedure-call (merge (get-procedure-steps program next) `end) (cdr (to-list next-steps))  previous-steps state program (- limit 1) (+ 1 current-steps) threshold))
+          (#t (procedure-call (merge (get-procedure-steps program next) `end) (cdr (to-list next-steps))  previous-steps state program (- limit 1) current-steps threshold))
           (#t (display "err"));evaluate procedure
-        ))))
+        )))))
 
 (define (procedure-call procedure-steps next-steps previous-steps state program limit current-steps threshold)
   (cond
-    ((or (> 0 limit) (> current-steps threshold)) (list previous-steps state))
+    ((> 0 limit) (list previous-steps state))
+    ((> current-steps threshold) (list (merge previous-steps `step) state))
     ((null? procedure-steps) (simulate-next next-steps previous-steps state program limit current-steps threshold))
     (#t (let ((next (car procedure-steps)))
         (cond
@@ -108,16 +112,16 @@
              (cond
                ((eqv? condi `north?)
                 (if (north? state)
-                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
-                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else
+                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit current-steps threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit current-steps threshold)));else
                ((eqv? condi `mark?)
                 (if (mark? state)
-                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
-                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit current-steps threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit current-steps threshold)));else);if north then send this program
                ((eqv? condi `wall?)
                 (if (wall? state)
-                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
-                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit current-steps threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr next))) (cdr procedure-steps)) next-steps previous-steps state program limit current-steps threshold)));else);if north then send this program
                (#t (display "error")); return error
              )) (display next))) ;error?
 
@@ -126,16 +130,16 @@
              (cond
                ((eqv? condi `north?)
                 (if (north? state)
-                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
-                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else
+                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit current-steps threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit current-steps threshold)));else
                ((eqv? condi `mark?)
                 (if (mark? state)
-                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
-                    (procedure-call (merge (cadr (cdr (cdr procedure-steps)))(cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit current-steps threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr procedure-steps)))(cddddr procedure-steps)) next-steps previous-steps state program limit current-steps threshold)));else);if north then send this program
                ((eqv? condi `wall?)
                 (if (wall? state)
-                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold);true
-                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit (+ 1 current-steps) threshold)));else);if north then send this program
+                    (procedure-call (merge (car (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit current-steps threshold);true
+                    (procedure-call (merge (cadr (cdr (cdr procedure-steps))) (cddddr procedure-steps)) next-steps previous-steps state program limit current-steps threshold)));else);if north then send this program
                (#t (display "error")); return error
              ))) ;error?
           
@@ -144,7 +148,7 @@
           ((eqv? next `get-mark) (if (mark? state) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (get-mark state) program limit (+ 1 current-steps) threshold) (list previous-steps state)))
           ((eqv? next `put-mark) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (put-mark state) program limit (+ 1 current-steps) threshold))
           ((eqv? next `turn-left) (procedure-call (cdr procedure-steps) next-steps (merge previous-steps next) (turn-left state) program limit (+ 1 current-steps) threshold))
-          (#t (procedure-call (merge (merge (get-procedure-steps program next) `end) (cdr procedure-steps)) next-steps previous-steps state program (- limit 1) (+ 1 current-steps) threshold))
+          (#t (procedure-call (merge (merge (get-procedure-steps program next) `end) (cdr procedure-steps)) next-steps previous-steps state program (- limit 1) current-steps threshold))
         )))
     ))
 
