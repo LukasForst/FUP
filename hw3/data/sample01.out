@@ -1,0 +1,1 @@
+((0 0 8 10) ((procedure start ((if wall? () (2)) put-mark)) (procedure 2 (step start step))))

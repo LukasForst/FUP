@@ -1,0 +1,1 @@
+((0 0 5 6) ((procedure start ((if north? (start) ()) turn-left start))))
