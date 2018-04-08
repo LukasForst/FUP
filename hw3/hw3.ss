@@ -1,6 +1,7 @@
-;#lang racket
+#lang racket
+;#lang r5rs
 ;(require racket/trace)
-
+;(require rnrs/mutable-pairs-6)
 
 ;state - (<maze> (<coordinate-x> <coordinate-y>) <orientation>)
 (define (maze-idx) 0)
@@ -32,6 +33,7 @@
 
 (define (get-curr-val state) (value-xy (get-maze-state state) (get-curr-x state) (get-curr-y state)))
 
+(define get-x value-on-nth-element)
 (define (set-x li x val)
   (define (_set-x li x val x-li)
     (cond
@@ -271,4 +273,125 @@
     (bubble-sort-aux (length L) L lambda-condition))
 
 (define (bubb L)
-  (bubbleH (bubbleH (bubbleH (bubbleH L (lambda (L) (<= (cadddr (caar L)) (cadddr (caadr L))))) (lambda (L) (<= (caddr (caar L)) (caddr (caadr L))))) (lambda (L) (<= (cadr (caar L)) (cadr (caadr L))))) (lambda (L) (<= (caaar L) (caaadr L)))))
+  (bubbleH
+   (bubbleH
+    (bubbleH
+     (bubbleH L (lambda (L) (<= (cadddr (caar L)) (cadddr (caadr L)))))
+     (lambda (L) (<= (caddr (caar L)) (caddr (caadr L)))))
+    (lambda (L) (<= (cadr (caar L)) (cadr (caadr L)))))
+   (lambda (L) (<= (caaar L) (caaadr L)))))
+
+
+;--------------------------------------------------------- HW3
+(define one-gen-pop 20)
+
+(define (congruential-rng seed)
+  (let ((a 16807 #|(expt 7 5)|#)
+        (m 2147483647 #|(- (expt 2 31) 1)|#))
+    (let ((m-1 (- m 1)))
+      (let ((seed (+ (remainder seed m-1) 1)))
+        (lambda (b)
+          (let ((n (remainder (* a seed) m)))
+            (set! seed n)
+            (quotient (* (- n 1) b) m-1)))))))
+(define random (congruential-rng 12345))
+
+(define init
+  '(
+    ((procedure start ()))
+    ((procedure start (start)))
+    ((procedure start (step)))
+    ((procedure start (step start)))
+    ((procedure start ((if wall? () (step start step)) put-mark)))
+    ((procedure start ((if north? (start) ()) turn-left start)))
+    ((procedure start (turn-left turn-left turn-left)))
+    ((procedure start (put-mark (if mark? (turn-left turn-left) ()) step put-mark)))
+    ((procedure start (step step step put-mark)))
+    ((procedure start (put-mark (if wall? turn-left step) start)))
+    ((procedure start (put-mark)))
+    ((procedure start ((if wall? put-mark step))))
+    ((procedure start ((if wall? put-mark (step start)))))
+    ((procedure start ((if wall? put-mark (step start turn-left turn-left step turn-left turn-left)))))
+    ((procedure start ((if wall? put-mark (step start)))))
+    ((procedure start (step step step put-mark)))
+   ))
+
+(define (selection eval-results)
+  (define (selection-rec eval selected selected-size prob)
+    (if (null? eval) selected
+        (let ((current (car eval))
+              (rd (random 100)))
+          (cond
+            ((> selected-size (/ one-gen-pop 2)) selected)
+            ((< selected-size (/ one-gen-pop 4)) (selection-rec (cdr eval) (append selected (list (cadr current))) (+ selected-size 1) (- 5 prob)))
+            ((> rd prob) (selection-rec (cdr eval) (append selected (list (cadr current))) (+ selected-size 1) (- 5 prob)))
+            (#t (selection-rec (cdr eval) selected selected-size (- 5 prob)))))))
+  (selection-rec eval-results `() 0 100))
+
+(define (set-instruction prg idx instruction)
+    (set-x prg 0 (set-x (car prg) 2 (set-x (caddar prg) idx instruction))))
+
+(define (append-instruction prg instruction)
+    (set-x prg 0 (set-x (car prg) 2 (merge (caddar prg) `step))))
+
+(define (move-instructions)
+  (define ins
+    `(step turn-left put-mark get-mark))
+
+  (if (= 0 (random 15)) (merge ins `start) ins))
+
+(define (get-random-move)
+  (let ((ins (move-instructions)))
+    (let ((rd (random (length ins))))
+      (get-x ins rd))))
+
+(define if-instructions
+  `((if mark? () ()) (if north? () ()) (if wall? () ())))
+
+(define (get-random-if)
+  (let ((rd (random 3)))
+    (let ((rd-if (get-x if-instructions rd))
+          (rd-ins1 (random 10))
+          (rd-ins2 (random 10)))
+      (set-x (set-x rd-if 2 (if (> rd-ins1 6) (get-random-move) `())) 3 (if (> (+ rd-ins2 rd-ins2) 15) (get-random-move) `())))))
+
+(define (mutation programs)
+  (define (append-mut program)
+    (append-instruction program (if (= (random 3) 0) (get-random-if) (get-random-move))))
+
+  (define (ins-mut program)
+    (set-instruction program (random (length (caddar program))) (if (= (random 3) 0) (get-random-if) (get-random-move))))
+        
+  (define (mutation-rec programs mutated)
+    (if (null? programs) mutated
+        (let ((rd (random 10))
+              (curr (car programs)))
+          (mutation-rec (cdr programs) (append mutated (list (if (or (< (length (caddar curr)) 3) (> rd 8)) (append-mut curr) (ins-mut curr))))))))
+
+  (mutation-rec programs `()))
+
+(define (crossover programs)
+  programs)
+
+(define create-initial
+  ;(append (crossover (mutation init)) init))
+  init)
+
+(define (evolve pairs threshold stack-size)
+  (evolve-prg pairs threshold stack-size create-initial '((9999999 9999999 9999999 9999999))))
+
+(define (print-progs prg)
+  (if (null? prg) `()
+      (begin (display '-----------) (newline) (display (car prg)) (display '-----------) (newline) (print-progs (cdr prg)))))
+
+(define (evolve-prg pairs threshold stack-size programs current-best)
+  (let ((result (evaluate programs pairs threshold stack-size)))
+    (let ((res-best (car result)))
+      (let ((best (car (sort-results (list res-best current-best)))))
+        (begin
+          (display best)
+          (newline)
+          (evolve-prg pairs threshold stack-size (perform-evolution (append (list best) result)) best))))))
+
+(define (perform-evolution eval-results)
+  (crossover (mutation (selection eval-results))))
