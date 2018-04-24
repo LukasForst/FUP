@@ -1,20 +1,26 @@
-import Utilities
+-- import Utilities
 import SedmaDatatypes
 
 replay :: Cards -> Maybe Winner
 replay [] = Nothing
-replay cards = _replay cards ((AC, 0, 0), (BD, 0, 0)) AC
+replay cards = if dataOk then _replay cards ((AC, 0, 0), (BD, 0, 0)) AC else Nothing
     where
-        _replay :: Cards -> ((Team, Int, Int),(Team, Int, Int)) -> Team -> Maybe Winner
+        dataOk = areDataCorrect cards
+        _replay :: Cards -> ((Team, Int, Int),(Team, Int, Int)) -> Team  -> Maybe Winner
         _replay cards evaluatedTeams teamOnMove
-            | (mod (length cards) 4) != 0 = Nothing
-            | length cards == 0 = getWinner evaluatedTeams
+            | length cards == 0 = getWinner (addToTeams evaluatedTeams (teamOnMove, 10, 0))
             | otherwise = _replay nextCards nextEvaluated nextTeamOnMove
                 where
                     (thisGameCards, nextCards) = getOneGameCards cards
                     (nextTeamOnMove, s, tr) = playOne thisGameCards teamOnMove
                     nextEvaluated = addToTeams evaluatedTeams (nextTeamOnMove, s, tr)
 
+
+areDataCorrect :: Cards -> Bool
+areDataCorrect cards
+    | (mod (length cards) 4) != 0 = False
+    | length cards != 32 = False
+    | otherwise = True
 
 playOne :: Cards -> Team -> (Team, Int, Int)
 playOne cards team = _playOne cards (switchTeam team) team (getRank (cards !! 0)) 1
@@ -24,7 +30,8 @@ playOne cards team = _playOne cards (switchTeam team) team (getRank (cards !! 0)
             | stage == -1 = (trickTeam, evaluateOneRoundCards cards, 1)
             | otherwise = _playOne cards (switchTeam currentTeam) leader trickRank (stage - 1)
                 where
-                    leader = if (getRank (cards !! stage)) == trickRank then currentTeam else trickTeam
+                    currRank = getRank (cards !! stage)
+                    leader = if currRank == trickRank || currRank == R7 then currentTeam else trickTeam
 
 evaluateOneRoundCards :: Cards -> Int
 evaluateOneRoundCards cards = _countCards cards 0
@@ -47,3 +54,40 @@ getWinner ((t1, score1, tricsWon1), (t2, score2, tricsWon2)) = eval
             | score1 == score2 = Nothing
             | score1 > score2 = Just (t1, (points tricsWon2 score2))
             | score1 < score2 = Just (t2, (points tricsWon2 score1))
+
+
+instance Eq Rank where
+    (==) R7 R7 = True
+    (==) R8 R8 = True
+    (==) R9 R9 = True
+    (==) R10 R10 = True
+    (==) RJ RJ = True
+    (==) RQ RQ = True
+    (==) RK RK= True
+    (==) RA RA = True
+    (==) _ _ = False
+
+
+getRank :: Card -> Rank
+getRank (Card suit rank) = rank
+
+switchTeam :: Team -> Team
+switchTeam team = if team == AC then BD else AC
+
+getOneGameCards :: Cards -> (Cards, Cards)
+getOneGameCards cards = (one, rest)
+    where
+        one = take 4 cards
+        rest = drop 4 cards
+
+addToTeams :: ((Team, Int, Int), (Team, Int, Int)) -> (Team, Int, Int) -> ((Team, Int, Int), (Team, Int, Int))
+addToTeams ((t1, s1, tr1), (t2, s2, tr2)) (t, s, tr) =
+    if t1 == t
+        then (addToTeam (t1, s1, tr1) (t, s, tr), (t2, s2, tr2))
+    else ((t1, s1, tr1), addToTeam (t2, s2, tr2) (t, s, tr))
+
+addToTeam :: (Team, Int, Int) -> (Team, Int, Int) -> (Team, Int, Int)
+addToTeam (t1, score, tricsWon) (t2, scoreToAdd, tricsWonToAdd) = (t1, (score + scoreToAdd), (tricsWon + tricsWonToAdd))
+
+(!=) :: Eq a => a -> a -> Bool
+(!=) a b = a /= b
