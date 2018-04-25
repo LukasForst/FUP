@@ -2,7 +2,6 @@
 import SedmaDatatypes
 
 replay :: Cards -> Maybe Winner
-replay [] = Nothing
 replay cards = if dataOk then _replay cards ((AC, 0, 0), (BD, 0, 0)) AC else Nothing
     where
         dataOk = areDataCorrect cards
@@ -18,7 +17,6 @@ replay cards = if dataOk then _replay cards ((AC, 0, 0), (BD, 0, 0)) AC else Not
 
 areDataCorrect :: Cards -> Bool
 areDataCorrect cards
-    | (mod (length cards) 4) != 0 = False
     | length cards != 32 = False
     | otherwise = True
 
@@ -27,20 +25,21 @@ playOne cards team = _playOne cards (switchTeam team) team (getRank (cards !! 0)
     where
         _playOne :: Cards -> Team -> Team -> Rank -> Int -> (Team, Int, Int)
         _playOne cards currentTeam trickTeam trickRank stage
-            | stage == -1 = (trickTeam, evaluateOneRoundCards cards, 1)
-            | otherwise = _playOne cards (switchTeam currentTeam) leader trickRank (stage - 1)
+            | stage == 4 = (trickTeam, evaluateOneRoundCards cards currentTeam trickTeam, 1)
+            | otherwise = _playOne cards (switchTeam currentTeam) leader trickRank (stage + 1)
                 where
                     currRank = getRank (cards !! stage)
                     leader = if currRank == trickRank || currRank == R7 then currentTeam else trickTeam
 
-evaluateOneRoundCards :: Cards -> Int
-evaluateOneRoundCards cards = _countCards cards 0
+evaluateOneRoundCards :: Cards -> Team -> Team -> Int
+evaluateOneRoundCards cards firstPlaying winningTeam =
+    if winningTeam == firstPlaying then (_eval_card (cards !! 0)) + (_eval_card (cards !! 2))
+    else (_eval_card (cards !! 1)) + (_eval_card (cards !! 3))
     where
-        _countCards :: Cards -> Int -> Int
-        _countCards cards score
-            | length cards == 0 = score
-            | (getRank (cards !! 0)) == RA || (getRank (cards !! 0)) == R10 = _countCards (drop 1 cards) (score + 10)
-            | otherwise = _countCards (drop 1 cards) score
+        _eval_card :: Card -> Int
+        _eval_card card = if (getRank card) == RA || (getRank card) == R10 then 10 else 0
+
+
 
 getWinner :: ((Team, Int, Int), (Team, Int, Int)) -> Maybe Winner
 getWinner ((t1, score1, tricsWon1), (t2, score2, tricsWon2)) = eval
