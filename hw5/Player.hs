@@ -31,15 +31,21 @@ instance PlayerState State where
             addToState :: State -> Card -> State
             addToState (State inHand o) card = State (inHand ++ [card]) o
 
-sillyPlayer :: AIPlayer State
-sillyPlayer trick (State inHand _) = inHand !! 0
-
 player :: AIPlayer State
 player [] (State inHand _) = getCard inHand inHand
     where
         getCard :: Cards -> Hand -> Card
         getCard [] hand = hand !! 0
-        getCard ((Card suit rank):xs) hand = if rank == R7 then getCard xs hand else (Card suit rank)
+        getCard (x:xs) hand = if (getRank x) == R7 then getCard xs hand else x
 
-player trick (State inHand _) = if length inHand > 1 then inHand !! 1 else inHand !! 0
+player trick (State inHand _) = card
+    where
+        selectWinningCards :: Rank -> Cards -> Cards
+        selectWinningCards _ [] = []
+        selectWinningCards targetRank (x:xs)
+            | targetRank == (getRank x) = [x] ++ (selectWinningCards targetRank xs)
+            | R7 == (getRank x) = (selectWinningCards targetRank xs) ++ [x]
+            | otherwise = (selectWinningCards targetRank xs)
 
+        selected = selectWinningCards (getRank (trick !! 0)) inHand
+        card = if length selected == 0 then inHand !! 0 else selected !! 0

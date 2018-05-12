@@ -4,6 +4,7 @@ import Prelude
 import SedmaBase
 import SedmaReplay
 import SedmaDecks
+import SillyPlayer
 import Player
 
 data GlobalState s t = GlobalState {
