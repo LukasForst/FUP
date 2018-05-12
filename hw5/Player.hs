@@ -1,46 +1,45 @@
--- Possible gotcha:
---     missing -
---          data Team = AC | BD deriving (Eq, Show)
-
 module Player where
 
 import SedmaBase
-
-(!=) :: Eq a => a -> a -> Bool
-(!=) a b = a /= b
+import Utils
 
 data State = State {
-    inHand :: Hand
+    inHand :: Hand,
+    otherStats :: OtherStats
+}
+
+data OtherStats = OtherStats {
+    thisPlayer :: Player,
+    roundStartingPlayer :: Player,
+    playedCards :: Cards
 }
 
 instance PlayerState State where
-    initState player hand = State hand
+    initState player hand = State hand (OtherStats player A [])
 
-    updateState trick player currentWinningCard Nothing (State inHand) = (State (getCards trick inHand))
+    updateState trick trickWinningPlayer winningCard Nothing (State inHand o) = State (getCards trick inHand) (updateOtherStats o)
         where
-            removeItem :: Eq a => a -> [a] -> [a]
-            removeItem _ [] = []
-            removeItem x (y:ys) | x == y = removeItem x ys
-                                | otherwise = y : removeItem x ys
-
             getCards :: Trick -> Hand -> Hand
             getCards [] inHandCards = inHandCards
             getCards (c:cs) inHandCards = if elem c inHandCards then removeItem c inHandCards else getCards cs inHandCards
 
-    updateState trick player currentWinningCard (Just givenCard) state = addToState (updateState trick player currentWinningCard Nothing state) givenCard
+            updateOtherStats :: OtherStats -> OtherStats
+            updateOtherStats (OtherStats p rs cards) = OtherStats p trickWinningPlayer (merge cards trick)
+
+    updateState x y z (Just givenCard) w = addToState (updateState x y z Nothing w) givenCard
         where
             addToState :: State -> Card -> State
-            addToState (State inHand) card = (State (inHand ++ [card]))
+            addToState (State inHand o) card = State (inHand ++ [card]) o
 
 sillyPlayer :: AIPlayer State
-sillyPlayer trick (State inHand) = inHand !! 0
+sillyPlayer trick (State inHand _) = inHand !! 0
 
 player :: AIPlayer State
-player [] (State inHand) = getCard inHand inHand
+player [] (State inHand _) = getCard inHand inHand
     where
         getCard :: Cards -> Hand -> Card
         getCard [] hand = hand !! 0
         getCard ((Card suit rank):xs) hand = if rank == R7 then getCard xs hand else (Card suit rank)
 
-player trick (State inHand) = if length inHand > 1 then inHand !! 1 else inHand !! 0
+player trick (State inHand _) = if length inHand > 1 then inHand !! 1 else inHand !! 0
 
