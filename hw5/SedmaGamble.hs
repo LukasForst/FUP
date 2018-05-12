@@ -3,6 +3,8 @@ module SedmaGamble where
 import Prelude
 import SedmaBase
 import SedmaReplay
+import SedmaDecks
+import Player
 
 data GlobalState s t = GlobalState {
    deck :: Cards,
@@ -43,7 +45,7 @@ playRound (GlobalState deck leader hands statesAC playerAC statesBD playerBD) = 
 playGame :: (PlayerState s, PlayerState t) => GlobalState s t -> Cards -> Cards
 playGame (GlobalState [] _ [[],[],[],[]] _ _ _ _) cards = cards
 playGame gs cards = playGame gs' (cards++trick) where
-   trick = playRound gs 
+   trick = playRound gs
    ordered = order (leader gs) trick
    leader' = winner trick (leader gs)
    hands' = map (filter ((flip notElem) trick)) (hands gs)
@@ -68,3 +70,29 @@ gamble ac bd cards = playGame gs [] where
    statesBD' = [stateB, stateD]
    gs = GlobalState cards' A hands' statesAC' ac statesBD' bd
 
+run deckNo = replay (gamble player sillyPlayer (decks !! deckNo))
+
+test :: (Int, Int)
+test = testPlayers player sillyPlayer
+
+testPlayers :: (PlayerState s, PlayerState t) => AIPlayer s -> AIPlayer t -> (Int, Int)
+testPlayers p1 p2 = pp decks (0, 0)
+    where
+        pointsToNum :: Points -> Int
+        pointsToNum Three = 3
+        pointsToNum Two = 2
+        pointsToNum One = 1
+
+        add :: (Maybe Winner) -> (Int, Int) -> (Int, Int)
+        add Nothing list = list
+        add (Just (AC, points)) (acPoints, bdPoints) = (acPoints + (pointsToNum points), bdPoints)
+        add (Just (BD, points)) (acPoints, bdPoints) = (acPoints, bdPoints  + (pointsToNum points))
+
+        pp :: [Cards] -> (Int, Int) -> (Int, Int)
+        pp [] currStats = currStats
+        pp dcks currStats = (pp (drop 1 dcks) (add (replay (gamble p1 p2 (dcks !! 0))) currStats))
+
+main :: IO()
+main = do
+        let winner = run 1
+        print winner

@@ -5,7 +5,8 @@ data Rank = R7 | R8 | R9 | R10 | RJ | RQ | RK | RA deriving (Eq, Show, Enum)
 data Card = Card Suit Rank deriving (Eq, Show)
 type Cards = [Card]
 
-data Team = AC | BD deriving Show
+data Team = AC | BD deriving (Eq, Show)
+
 data Points = One | Two | Three deriving Show
 type Winner = (Team, Points)
 
@@ -16,7 +17,7 @@ type Hand = [Card]
 class PlayerState s where
    initState   :: Player -> Hand -> s
    updateState :: Trick -> Player -> Card -> Maybe Card -> s -> s
-   
+
 type AIPlayer s = Trick -> s -> Card
 
 players = A:B:C:D:players
