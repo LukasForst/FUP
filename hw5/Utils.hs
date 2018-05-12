@@ -23,3 +23,7 @@ getTeam D = BD
 
 getRank :: Card -> Rank
 getRank (Card suit rank) = rank
+
+switchTeam :: Team -> Team
+switchTeam AC = BD
+switchTeam BD = AC
