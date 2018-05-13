@@ -3,7 +3,7 @@ module Player where
 import SedmaBase
 import Utils
 
-data State = State {
+data MState = MState {
     inHand :: Hand,
     otherStats :: OtherStats
 }
@@ -14,10 +14,10 @@ data OtherStats = OtherStats {
     playedCards :: Cards
 }
 
-instance PlayerState State where
-    initState player hand = State hand (OtherStats player A [])
+instance PlayerState MState where
+    initState player hand = MState hand (OtherStats player A [])
 
-    updateState trick trickWinningPlayer winningCard Nothing (State inHand o) = State (getCards trick inHand) (updateOtherStats o)
+    updateState trick trickWinningPlayer winningCard Nothing (MState inHand o) = MState (getCards trick inHand) (updateOtherStats o)
         where
             getCards :: Trick -> Hand -> Hand
             getCards [] inHandCards = inHandCards
@@ -28,17 +28,17 @@ instance PlayerState State where
 
     updateState x y z (Just givenCard) w = addToState (updateState x y z Nothing w) givenCard
         where
-            addToState :: State -> Card -> State
-            addToState (State inHand o) card = State (inHand ++ [card]) o
+            addToState :: MState -> Card -> MState
+            addToState (MState inHand o) card = MState (inHand ++ [card]) o
 
-player :: AIPlayer State
-player [] (State inHand _) = getCard inHand inHand
+player :: AIPlayer MState
+player [] (MState inHand _) = getCard inHand inHand
     where
         getCard :: Cards -> Hand -> Card
         getCard [] hand = hand !! 0
         getCard (x:xs) hand = if (getRank x) == R7 then getCard xs hand else x
 
-player trick (State inHand (OtherStats thisPlayer roundStartingPlayer _)) = card
+player trick (MState inHand (OtherStats thisPlayer roundStartingPlayer _)) = card
     where
         selectWinningCards :: Rank -> Cards -> Cards
         selectWinningCards _ [] = []

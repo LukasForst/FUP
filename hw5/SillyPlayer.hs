@@ -3,5 +3,5 @@ import SedmaBase
 import Player
 
 
-sillyPlayer :: AIPlayer State
-sillyPlayer trick (State inHand _) = inHand !! 0
+sillyPlayer :: AIPlayer MState
+sillyPlayer trick (MState inHand _) = inHand !! 0
