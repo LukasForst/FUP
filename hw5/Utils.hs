@@ -1,6 +1,14 @@
 module Utils where
 
 import SedmaBase
+-- following modules need to be imported for upload system
+-- import SedmaGamble
+-- import SedmaReplay
+
+instance Eq Team where
+    (==) AC AC = True
+    (==) BD BD = True
+    (==) _ _ = False
 
 (!=) :: Eq a => a -> a -> Bool
 (!=) a b = a /= b
