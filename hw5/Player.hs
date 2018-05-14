@@ -33,27 +33,23 @@ instance PlayerState MState where
             addToState (MState inHand o) card = MState (inHand ++ [card]) o
 
 player :: AIPlayer MState
-player [] (MState inHand _) = getCard inHand inHand
+player [] (MState inHand _) = if length non7Cards > 0 then non7Cards !! 0 else inHand !! 0
     where
-        getCard :: Cards -> Hand -> Card
-        getCard [] hand = hand !! 0
-        getCard ((Card x rank):xs) hand = if rank == R7 then getCard xs hand else (Card x rank)
+        non7Cards = generateCards inHand 1 (\ x -> x != R7)
 
 player ((Card x winningRank): xs) (MState inHand (OtherStats _ thisTeam roundStartingTeam _)) = card
     where
         card :: Card
         card = if ((getWinningTeam ((Card x winningRank): xs) roundStartingTeam) == thisTeam) then playerLeader else playerNotLeader
             where
-                generateCards :: (Rank -> Bool) -> Cards
-                generateCards condition = take 4 [(Card suit rank) | (Card suit rank) <- inHand, condition rank]
-
-                leaderCards = generateCards (\ x -> x == winningRank)
-                r7Cards = generateCards (\ x -> x == R7)
-                nonR7Cards = generateCards (\ x -> x != R7)
-                pointsCards = generateCards (\ x -> x == R10 || x == RA)
-                nonPointsCards = generateCards (\ x -> x != R10 && x != RA)
+                leaderCards = generateCards inHand 1 (\ x -> x == winningRank)
+                r7Cards = generateCards inHand 1 (\ x -> x == R7)
+                nonR7Cards = generateCards inHand 1 (\ x -> x != R7)
+                pointsCards = generateCards inHand 1 (\ x -> x == R10 || x == RA)
+                nonPointsCards = generateCards inHand 1 (\ x -> x != R10 && x != RA)
 
                 playerLeader
+                    | length leaderCards > 0 = leaderCards !! 0
                     | length pointsCards > 0 = pointsCards !! 0
                     | length nonR7Cards > 0 = nonR7Cards !! 0
                     | otherwise = inHand !! 0
