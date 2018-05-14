@@ -38,17 +38,10 @@ player [] (MState inHand _) = getCard inHand inHand
         getCard [] hand = hand !! 0
         getCard (x:xs) hand = if (getRank x) == R7 then getCard xs hand else x
 
-player trick (MState inHand (OtherStats thisPlayer roundStartingPlayer _)) = card
+player ((Card x winningRank): xs) (MState inHand (OtherStats thisPlayer roundStartingPlayer _)) = card
     where
-        selectWinningCards :: Rank -> Cards -> Cards
-        selectWinningCards _ [] = []
-        selectWinningCards targetRank (x:xs)
-            | targetRank == (getRank x) = [x] ++ (selectWinningCards targetRank xs)
-            | R7 == (getRank x) = (selectWinningCards targetRank xs) ++ [x]
-            | otherwise = (selectWinningCards targetRank xs)
-
         getWinningTeam :: Team
-        getWinningTeam = _getWinningTeam trick start start (getRank (trick !! 0))
+        getWinningTeam = _getWinningTeam ((Card x winningRank): xs) start start winningRank
             where
                 start :: Team
                 start = getTeam roundStartingPlayer
@@ -59,13 +52,24 @@ player trick (MState inHand (OtherStats thisPlayer roundStartingPlayer _)) = car
                     where
                         winning = if rank == winningRank || rank ==  R7 then currPlaying else currWinning
 
-        selected :: Cards
-        selected = selectWinningCards (getRank (trick !! 0)) inHand
-
         card :: Card
-        card
-            | length selected == 0 = inHand !! 0
-            | ((getRank (selected !! 0)) == R7) && (getWinningTeam == (getTeam thisPlayer)) && ((length nonR7Cards) != 0)  = nonR7Cards !! 0
-            | otherwise = selected !! 0
+        card = if (getWinningTeam == (getTeam thisPlayer)) then playerLeader else playerNotLeader
             where
+                leaderCards = take 4 [(Card suit rank) | (Card suit rank) <- inHand, winningRank == rank]
+                r7Cards = take 4 [(Card suit rank) | (Card suit rank) <- inHand, rank == R7]
                 nonR7Cards = take 4 [(Card suit rank) | (Card suit rank) <- inHand, rank != R7]
+                pointsCards = take 4 [(Card suit rank) | (Card suit rank) <- inHand, rank == RA || rank == R10]
+                nonPointsCards = take 4 [(Card suit rank) | (Card suit rank) <- inHand, rank != RA && rank != R10]
+
+                playerLeader
+                    | length leaderCards > 0 = leaderCards !! 0
+                    | length r7Cards > 0 = r7Cards !! 0
+--                     | length pointsCards > 0 = pointsCards !! 0
+                    | (length leaderCards > 0) && ((getRank (leaderCards !! 0)) == R7) && ((length nonR7Cards) != 0)  = nonR7Cards !! 0
+                    | otherwise = inHand !! 0
+
+                playerNotLeader
+                    | length leaderCards > 0 = leaderCards !! 0
+                    | length r7Cards > 0 = r7Cards !! 0
+                    | length nonPointsCards > 0 = nonPointsCards !! 0
+                    | otherwise = inHand !! 0
