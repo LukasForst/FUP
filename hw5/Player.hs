@@ -51,7 +51,7 @@ player [] (MState inHand (OtherStats _ _ _ played)) = card
         nonR7Cards = filter (\ (Card _ rank) -> rank != R7) inHand
         scoringCards = filter (\ (Card _ rank) -> rank == RA || rank == R10) inHand
         filteredByMostPlayed = case mostPlayedRank of
-                                (Just value, count) -> if count > 2 then  filter (\ (Card _ rank) -> rank == value) inHand else []
+                                (Just value, count) -> if count >= 2 then  filter (\ (Card _ rank) -> rank == value) inHand else []
                                 (Nothing, _) -> []
 
         card :: Card
