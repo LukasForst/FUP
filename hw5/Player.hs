@@ -33,25 +33,33 @@ instance PlayerState MState where
             addToState (MState inHand o) card = MState (inHand ++ [card]) o
 
 player :: AIPlayer MState
-player [] (MState inHand (OtherStats _ _ _ played)) = finalize mostPlayedRankInHand
+player [] (MState inHand (OtherStats _ _ _ played)) = card
     where
-        non7Cards = filter (\ (Card _ rank) -> rank != R7) inHand
-        mostPlayedRankInHand :: (Maybe Rank)
-        mostPlayedRankInHand = _mostPlayedRankInHand played inHand 0 R7
+        mostPlayedRank :: (Maybe Rank, Int)
+        mostPlayedRank = _mostPlayedRankInHand played inHand 0 Nothing
             where
-                _mostPlayedRankInHand :: Cards -> Cards -> Int -> Rank -> (Maybe Rank)
-                _mostPlayedRankInHand [] _ _ _ = Nothing
-                _mostPlayedRankInHand _ [] _ currentMaxRank = (Just currentMaxRank)
-                _mostPlayedRankInHand played ((Card _ nextRank):xs) currentMax currentMaxRank
-                    | currentCount > currentMax = _mostPlayedRankInHand played xs currentCount nextRank
-                    | otherwise = _mostPlayedRankInHand played xs currentMax currentMaxRank
-                    where
-                        currentCount = length (filter (\ (Card _ rank) -> rank == nextRank) played)
+                _mostPlayedRankInHand :: Cards -> Cards -> Int -> (Maybe Rank) -> (Maybe Rank, Int)
+                _mostPlayedRankInHand [] _ _ _ = (Nothing, 0)
+                _mostPlayedRankInHand _ [] count currentMaxRank = (currentMaxRank, count)
+                _mostPlayedRankInHand played ((Card _ nextRank):xs) _ Nothing = _mostPlayedRankInHand played xs (length (filter (\ (Card _ rank) -> rank == nextRank) played)) (Just nextRank)
+                _mostPlayedRankInHand played ((Card _ nextRank):xs) currentMax (Just currentMaxRank)
+                    | currentCount > currentMax = _mostPlayedRankInHand played xs currentCount (Just nextRank)
+                    | otherwise = _mostPlayedRankInHand played xs currentMax (Just currentMaxRank)
+                        where
+                            currentCount = length (filter (\ (Card _ rank) -> rank == nextRank) played)
 
-        finalize Nothing = if length non7Cards > 0 then non7Cards !! 0 else inHand !! 0
-        finalize (Just value) = if length filtered > 0 then filtered !! 0 else finalize Nothing
-            where
-                filtered = filter (\ (Card _ rank) -> rank == value) inHand
+        nonR7Cards = filter (\ (Card _ rank) -> rank != R7) inHand
+        scoringCards = filter (\ (Card _ rank) -> rank == RA || rank == R10) inHand
+        filteredByMostPlayed = case mostPlayedRank of
+                                (Just value, count) -> if count > 2 then  filter (\ (Card _ rank) -> rank == value) inHand else []
+                                (Nothing, _) -> []
+
+        card :: Card
+        card
+            | length filteredByMostPlayed > 0 = filteredByMostPlayed !! 0
+            | length scoringCards > 0 = scoringCards !! 0
+            | length nonR7Cards > 0 = nonR7Cards !! 0
+            | otherwise = inHand !! 0
 
 player ((Card x winningRank): xs) (MState inHand (OtherStats _ thisTeam roundStartingTeam _)) = card
     where
@@ -61,11 +69,11 @@ player ((Card x winningRank): xs) (MState inHand (OtherStats _ thisTeam roundSta
                 leaderCards = filter (\ (Card _ rank) -> rank == winningRank) inHand
                 r7Cards = filter (\ (Card _ rank) -> rank == R7) inHand
                 nonR7Cards = filter (\ (Card _ rank) -> rank != R7) inHand
-                rewardedCards = filter (\ (Card _ rank) -> rank == RA || rank == R10) inHand
+                scoringCards = filter (\ (Card _ rank) -> rank == RA || rank == R10) inHand
                 nonPointsCards = filter (\ (Card _ rank) -> rank != R10 && rank != RA) inHand
 
                 playerLeader
-                    | length rewardedCards > 0 = rewardedCards !! 0
+                    | length scoringCards > 0 = scoringCards !! 0
                     | length nonR7Cards > 0 = nonR7Cards !! 0
                     | otherwise = inHand !! 0
 
