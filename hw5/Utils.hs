@@ -24,9 +24,6 @@ getTeam C = AC
 getTeam B = BD
 getTeam D = BD
 
-generateCards :: Cards -> Int -> (Rank -> Bool) -> Cards
-generateCards collection count condition = take count [(Card suit rank) | (Card suit rank) <- collection, condition rank]
-
 switchTeam :: Team -> Team
 switchTeam AC = BD
 switchTeam BD = AC
