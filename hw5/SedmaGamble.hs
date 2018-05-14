@@ -73,11 +73,17 @@ gamble ac bd cards = playGame gs [] where
 
 run deckNo = replay (gamble player sillyPlayer (decks !! deckNo))
 
-test :: (Int, Int)
-test = testPlayers player sillyPlayer
+test :: [(Int, Int)]
+test = [test0, test1, test2]
+
+test0 :: (Int, Int)
+test0 = testPlayers player sillyPlayer
+
+test1 :: (Int, Int)
+test1 = testPlayers sillyPlayer player
 
 test2 :: (Int, Int)
-test2 = testPlayers sillyPlayer player
+test2 = testPlayers player player
 
 testPlayers :: (PlayerState s, PlayerState t) => AIPlayer s -> AIPlayer t -> (Int, Int)
 testPlayers p1 p2 = pp decks (0, 0)
