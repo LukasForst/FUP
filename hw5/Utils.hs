@@ -1,7 +1,7 @@
 module Utils where
 
-import SedmaBase
 -- following modules need to be imported for upload system
+import SedmaBase
 -- import SedmaGamble
 -- import SedmaReplay
 

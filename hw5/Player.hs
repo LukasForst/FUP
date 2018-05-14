@@ -49,7 +49,6 @@ player ((Card x winningRank): xs) (MState inHand (OtherStats _ thisTeam roundSta
                 nonPointsCards = generateCards inHand 1 (\ x -> x != R10 && x != RA)
 
                 playerLeader
-                    | length leaderCards > 0 = leaderCards !! 0
                     | length pointsCards > 0 = pointsCards !! 0
                     | length nonR7Cards > 0 = nonR7Cards !! 0
                     | otherwise = inHand !! 0
