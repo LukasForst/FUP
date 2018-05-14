@@ -48,6 +48,7 @@ player [] (MState inHand (OtherStats _ _ _ played)) = card
                         where
                             currentCount = length (filter (\ (Card _ rank) -> rank == nextRank) played)
 
+        r7Cards = filter (\ (Card _ rank) -> rank == R7) inHand
         nonR7Cards = filter (\ (Card _ rank) -> rank != R7) inHand
         scoringCards = filter (\ (Card _ rank) -> rank == RA || rank == R10) inHand
         filteredByMostPlayed = case mostPlayedRank of
@@ -57,7 +58,6 @@ player [] (MState inHand (OtherStats _ _ _ played)) = card
         card :: Card
         card
             | length filteredByMostPlayed > 0 = filteredByMostPlayed !! 0
-            | length scoringCards > 0 = scoringCards !! 0
             | length nonR7Cards > 0 = nonR7Cards !! 0
             | otherwise = inHand !! 0
 
