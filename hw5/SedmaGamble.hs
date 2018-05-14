@@ -76,6 +76,9 @@ run deckNo = replay (gamble player sillyPlayer (decks !! deckNo))
 test :: (Int, Int)
 test = testPlayers player sillyPlayer
 
+test2 :: (Int, Int)
+test2 = testPlayers sillyPlayer player
+
 testPlayers :: (PlayerState s, PlayerState t) => AIPlayer s -> AIPlayer t -> (Int, Int)
 testPlayers p1 p2 = pp decks (0, 0)
     where

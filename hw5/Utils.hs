@@ -35,3 +35,12 @@ getRank (Card suit rank) = rank
 switchTeam :: Team -> Team
 switchTeam AC = BD
 switchTeam BD = AC
+
+getWinningTeam :: Trick -> Team -> Team
+getWinningTeam ((Card x winningRank): xs) roundStartingTeam = _getWinningTeam ((Card x winningRank): xs) roundStartingTeam roundStartingTeam winningRank
+    where
+        _getWinningTeam :: Cards -> Team -> Team -> Rank -> Team
+        _getWinningTeam [] currPlaying currWinning rank = currWinning
+        _getWinningTeam ((Card _ rank) :xs) currPlaying currWinning winningRank =  _getWinningTeam xs (switchTeam currPlaying) winning winningRank
+            where
+                winning = if rank == winningRank || rank ==  R7 then currPlaying else currWinning
