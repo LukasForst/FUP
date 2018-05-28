@@ -61,7 +61,7 @@ player [] (MState inHand (OtherStats _ _ _ played)) = card
             | length nonR7Cards > 0 = nonR7Cards !! 0
             | otherwise = inHand !! 0
 
-player ((Card x winningRank): xs) (MState inHand (OtherStats _ thisTeam roundStartingTeam _)) = card
+player ((Card x winningRank): xs) (MState inHand (OtherStats _ thisTeam roundStartingTeam played)) = card
     where
         card :: Card
         card = if ((getWinningTeam ((Card x winningRank): xs) roundStartingTeam) == thisTeam) then playerLeader else playerNotLeader
@@ -75,12 +75,12 @@ player ((Card x winningRank): xs) (MState inHand (OtherStats _ thisTeam roundSta
                 winningPointsInTrick = length (filter (\ (Card _ rank) -> rank == RA || rank == R10) ((Card x winningRank): xs))
 
                 playerLeader
-                    | length scoringCards > 0 && (length ((Card x winningRank): xs)) == 3 = scoringCards !! 0
+                    | length scoringCards > 0 && (length ((Card x winningRank): xs)) >= 2 = scoringCards !! 0
                     | length nonR7Cards > 0 = nonR7Cards !! 0
                     | otherwise = inHand !! 0
 
                 playerNotLeader
                     | length leaderCards > 0 = leaderCards !! 0
-                    | length r7Cards > 0 && winningPointsInTrick >= 1 = r7Cards !! 0
+                    | length r7Cards > 0 && (winningPointsInTrick >= 1) = r7Cards !! 0
                     | length nonPointsCards > 0 = nonPointsCards !! 0
                     | otherwise = inHand !! 0
