@@ -6,6 +6,7 @@ import SedmaReplay
 import SedmaDecks
 import SillyPlayer
 import Player
+import GreedyPlayer
 
 data GlobalState s t = GlobalState {
    deck :: Cards,
@@ -74,7 +75,7 @@ gamble ac bd cards = playGame gs [] where
 run deckNo = replay (gamble player sillyPlayer (decks !! deckNo))
 
 test :: [(Int, Int)]
-test = [test0, test1, test2]
+test = [test0, test1, test2, test3, test4]
 
 test0 :: (Int, Int)
 test0 = testPlayers player sillyPlayer
@@ -84,6 +85,12 @@ test1 = testPlayers sillyPlayer player
 
 test2 :: (Int, Int)
 test2 = testPlayers player player
+
+test3 :: (Int, Int)
+test3 = testPlayers player greedyPlayer
+
+test4 :: (Int, Int)
+test4 = testPlayers greedyPlayer player
 
 testPlayers :: (PlayerState s, PlayerState t) => AIPlayer s -> AIPlayer t -> (Int, Int)
 testPlayers p1 p2 = pp decks (0, 0)
